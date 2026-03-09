@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Stoic — Habits & Tasks</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Cormorant:ital,wght@0,700;1,700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+:root {
+  --sab: env(safe-area-inset-bottom);
+  --bg:       #e8e0d0;
+  --bg2:      #dfd6c4;
+  --bg3:      #f2ece0;
+  --surface:  #f5f0e6;
+  --surface2: #ede5d6;
+  --border:   rgba(150,120,70,0.18);
+  --border2:  rgba(150,120,70,0.32);
+  --gold:     #a07828;
+  --gold2:    #c9a84c;
+  --gold-dim: rgba(160,120,40,0.10);
+  --ink:      #2a2118;
+  --ink2:     #4a3c2c;
+  --ink3:     #7a6a52;
+  --ink4:     #a89a84;
+  --red:      #9e2a20;
+  --red-bg:   rgba(158,42,32,0.10);
+  --green:    #2d6e50;
+  --green-bg: rgba(45,110,80,0.10);
+  --blue:     #2c5878;
+  --blue-bg:  rgba(44,88,120,0.10);
+  --violet:   #6a4e90;
+  --bottom-safe: calc(var(--sab) + 110px);
+}
+*,*::before,*::after{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overscroll-behavior:none;margin:0;background:var(--bg)}
+body{font-family:'DM Sans',sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+.serif{font-family:'Cormorant Garamond',Georgia,serif}
+.serif-bold{font-family:'Cormorant',Georgia,serif}
+.mono{font-family:'DM Mono',monospace}
+.scroll{overflow-y:auto;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+.scroll-x{overflow-x:auto;scrollbar-width:none}
+.scroll-x::-webkit-scrollbar{display:none}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes popIn{0%{transform:scale(0.88);opacity:0}70%{transform:scale(1.03)}100%{transform:scale(1);opacity:1}}
+@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+@keyframes checkIn{0%{transform:scale(0.5);opacity:0}70%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+
+.anim-up{animation:fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) both}
+.anim-pop{animation:popIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both}
+.anim-sheet{animation:slideUp 0.4s cubic-bezier(0.32,0.72,0,1) both}
+.s1{animation-delay:.06s}.s2{animation-delay:.12s}.s3{animation-delay:.18s}.s4{animation-delay:.24s}.s5{animation-delay:.30s}
+.press{transition:transform .12s ease,opacity .12s ease;cursor:pointer;border:none;background:none;padding:0}
+.press:active{transform:scale(0.95);opacity:.8}
+
+input[type=number]{font-size:16px!important;-moz-appearance:textfield}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none}
+input:focus,textarea:focus{outline:none}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:18px}
+.card-flat{background:var(--surface2);border:1px solid var(--border);border-radius:14px}
+
+.gold-text{background:linear-gradient(135deg,#a07828,#c9a84c,#a07828);background-size:200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.gold-shimmer{background:linear-gradient(90deg,#a07828,#c9a84c,#a07828);background-size:200%;animation:shimmer 2.5s linear infinite;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+.nav-blur{backdrop-filter:blur(28px) saturate(160%);-webkit-backdrop-filter:blur(28px) saturate(160%);background:rgba(232,224,208,0.94)}
+
+/* Ornamental divider */
+.ornament{display:flex;align-items:center;gap:12px;margin:20px 0}
+.ornament::before,.ornament::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(150,120,70,0.4),transparent)}
+.ornament span{font-size:10px;color:var(--gold);opacity:0.6;letter-spacing:0.25em;text-transform:uppercase}
+
+/* Priority dot */
+.prio-1{background:#c0392b}.prio-2{background:#e67e22}.prio-3{background:#c9a84c}.prio-4{background:#5a9e7a}
+
+/* Grain texture overlay */
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:1000;opacity:0.25}
+
+/* Scrolling quote ticker */
+@keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useMemo,useRef,useCallback}=React;
+const SK='stoic_v1';
+
+// ── DEFAULTS ──────────────────────────────────────────────
+const DEFAULT_HABITS=[
+  {id:'h1',name:'Blutdruck messen',icon:'💉',type:'measure',unit:'mmHg',placeholder:'z.B. 120/80',category:'health',color:'#9e2a20'},
+  {id:'h2',name:'Kalorien',icon:'🔥',type:'number',unit:'kcal',placeholder:'z.B. 1800',category:'health',color:'#c0621a'},
+  {id:'h3',name:'Wasser trinken',icon:'💧',type:'number',unit:'Liter',placeholder:'z.B. 2.5',category:'health',color:'#2c5878'},
+  {id:'h4',name:'Meditation',icon:'🧘',type:'check',category:'mind',color:'#6a4e90'},
+  {id:'h5',name:'Lesen',icon:'📖',type:'check',category:'mind',color:'#a07828'},
+  {id:'h6',name:'Sport / Bewegung',icon:'⚡',type:'check',category:'body',color:'#2d6e50'},
+  {id:'h7',name:'Journaling',icon:'✍️',type:'check',category:'mind',color:'#7a5c28'},
+  {id:'h8',name:'Schlaf',icon:'🌙',type:'number',unit:'Std',placeholder:'z.B. 7.5',category:'health',color:'#4a3c80'},
+];
+
+const QUOTES=[
+  {text:'Du hast Macht über deinen Geist, nicht über äußere Ereignisse. Erkenne dies, und du wirst Stärke finden.',author:'Marcus Aurelius'},
+  {text:'Verliere keine Zeit mehr damit zu diskutieren, wie ein guter Mensch sein soll. Sei einer.',author:'Marcus Aurelius'},
+  {text:'Wenn du deinen Geist nicht zuerst in Ordnung bringst, ist es zwecklos, irgendwo anders Ordnung zu suchen.',author:'Epiktet'},
+  {text:'Das Hindernis auf dem Weg ist der Weg.',author:'Marcus Aurelius'},
+  {text:'Bedenke, wie wenig du brauchst, um glücklich zu leben.',author:'Marcus Aurelius'},
+  {text:'Kümmere dich nicht darum, was andere denken. Kümmere dich darum, was du tust.',author:'Marcus Aurelius'},
+  {text:'Jeden Tag stirbt ein wenig – ich verliere Stunden meines Lebens, wenn ich sie verschwende.',author:'Seneca'},
+  {text:'Die Schlechtigkeit einer Person liegt nicht in ihren Umständen, sondern in ihrer Absicht.',author:'Epiktet'},
+];
+
+const PRIO_LABELS=['Kritisch','Hoch','Mittel','Niedrig'];
+const PRIO_COLORS=['#9e2a20','#c0621a','#a07828','#2d6e50'];
+
+const todayStr=()=>new Date().toISOString().slice(0,10);
+const isoWeek=d=>{const n=new Date(d);n.setHours(0,0,0,0);n.setDate(n.getDate()+4-(n.getDay()||7));return Math.ceil((((n-new Date(n.getFullYear(),0,1))/864e5)+1)/7)};
+const fmt=(iso,o)=>new Date(iso+'T12:00:00').toLocaleDateString('de-DE',o);
+const DAYS=['Mo','Di','Mi','Do','Fr','Sa','So'];
+
+// ── INPUT SHEET ───────────────────────────────────────────
+const InputSheet=({habit,onSave,onClose})=>{
+  const[val,setVal]=useState('');
+  const ref=useRef(null);
+  useEffect(()=>{setTimeout(()=>ref.current?.focus(),200);},[]);
+  return(
+    <div style={{position:'fixed',inset:0,zIndex:300,background:'rgba(0,0,0,0.7)',backdropFilter:'blur(8px)',display:'flex',alignItems:'flex-end'}} onClick={onClose}>
+      <div className="anim-sheet" style={{width:'100%',maxWidth:430,margin:'0 auto',background:'var(--bg3)',borderTop:'1px solid var(--border2)',borderRadius:'24px 24px 0 0',padding:'24px 24px calc(var(--sab)+32px)'}} onClick={e=>e.stopPropagation()}>
+        <div style={{width:36,height:3,borderRadius:2,background:'var(--ink4)',margin:'0 auto 20px'}}/>
+        <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:20}}>
+          <span style={{fontSize:28}}>{habit.icon}</span>
+          <div>
+            <p className="serif" style={{fontSize:20,color:'var(--ink)',lineHeight:1}}>{habit.name}</p>
+            {habit.unit&&<p style={{fontSize:11,color:'var(--ink3)',marginTop:2}}>{habit.unit}</p>}
+          </div>
+        </div>
+        <input ref={ref} type={habit.type==='measure'?'text':'number'} inputMode={habit.type==='measure'?'text':'decimal'}
+          value={val} onChange={e=>setVal(e.target.value)} placeholder={habit.placeholder||'Wert eintragen…'}
+          style={{width:'100%',background:'var(--surface)',border:`2px solid ${habit.color||'var(--gold)'}`,borderRadius:16,padding:'16px 18px',fontSize:28,fontWeight:500,color:'var(--ink)',textAlign:'center',fontFamily:'DM Mono,monospace',marginBottom:16}}/>
+        <button onClick={()=>{if(val.trim())onSave(val.trim());}} className="press"
+          style={{width:'100%',padding:'15px',background:habit.color||'var(--gold)',borderRadius:16,fontSize:14,fontWeight:600,color:'white',letterSpacing:'0.08em',boxShadow:`0 8px 24px ${habit.color||'#c9a84c'}40`}}>
+          Eintragen ✓
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ── HABIT CARD ────────────────────────────────────────────
+const HabitCard=({habit,log,onComplete,onOpenInput,onDelete,editMode})=>{
+  const today=todayStr();
+  const todayEntry=log.find(l=>l.date===today);
+  const done=!!todayEntry;
+  const last7=useMemo(()=>Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return log.find(l=>l.date===d.toISOString().slice(0,10));}),  [log]);
+
+  const handleTap=()=>{
+    if(editMode)return;
+    if(habit.type==='check')onComplete(habit.id,true);
+    else onOpenInput(habit);
+  };
+
+  return(
+    <div className="press anim-up" onClick={handleTap}
+      style={{background:done?`linear-gradient(135deg,${habit.color}15,${habit.color}06)`:'var(--surface)',
+        border:`1px solid ${done?habit.color+'60':'var(--border)'}`,borderRadius:18,padding:'16px',marginBottom:10,position:'relative',overflow:'hidden',transition:'all .25s',boxShadow:'0 1px 3px rgba(0,0,0,0.06)'}}>
+      {/* glow */}
+      {done&&<div style={{position:'absolute',top:-30,right:-20,width:100,height:100,borderRadius:'50%',background:`radial-gradient(circle,${habit.color}20,transparent 70%)`,pointerEvents:'none'}}/>}
+      <div style={{display:'flex',alignItems:'center',gap:14}}>
+        <div style={{width:44,height:44,borderRadius:14,background:done?`${habit.color}25`:'var(--surface2)',border:`1.5px solid ${done?habit.color+'60':'var(--border)'}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0,transition:'all .25s'}}>
+          {done?<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={habit.color} strokeWidth="3" strokeLinecap="round" style={{animation:'checkIn .3s ease'}}><polyline points="20 6 9 17 4 12"/></svg>:<span>{habit.icon}</span>}
+        </div>
+        <div style={{flex:1,minWidth:0}}>
+          <p style={{fontSize:14,fontWeight:500,color:done?'var(--ink2)':'var(--ink)',lineHeight:1.2}}>{habit.name}</p>
+          {todayEntry?.value&&<p style={{fontSize:13,color:habit.color,fontWeight:600,marginTop:3,fontFamily:'DM Mono,monospace'}}>{todayEntry.value} {habit.unit||''}</p>}
+          {!todayEntry&&habit.type!=='check'&&<p style={{fontSize:10,color:'var(--ink4)',marginTop:2}}>{habit.unit?`→ ${habit.unit} eintragen`:'Tippen zum Eintragen'}</p>}
+          {!todayEntry&&habit.type==='check'&&<p style={{fontSize:10,color:'var(--ink4)',marginTop:2}}>Tippen zum Abhaken</p>}
+        </div>
+        {/* 7-day dots */}
+        <div style={{display:'flex',gap:3,alignItems:'center',flexShrink:0}}>
+          {last7.map((entry,i)=>(
+            <div key={i} style={{width:6,height:6,borderRadius:'50%',background:entry?habit.color:'var(--ink4)',opacity:entry?1:0.3,transition:'all .2s'}}/>
+          ))}
+        </div>
+        {editMode&&<button onClick={e=>{e.stopPropagation();onDelete(habit.id);}} className="press" style={{width:28,height:28,borderRadius:8,background:'var(--red-bg)',border:'1px solid rgba(192,57,43,0.3)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#c0392b" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>}
+      </div>
+    </div>
+  );
+};
+
+// ── TODO ITEM ─────────────────────────────────────────────
+const TodoItem=({todo,onToggle,onDelete,onSetDay,editMode})=>{
+  const[expanded,setExpanded]=useState(false);
+  const overdue=todo.dueDate&&todo.dueDate<todayStr()&&!todo.done;
+  return(
+    <div className="anim-up" style={{marginBottom:8}}>
+      <div style={{background:todo.done?'var(--bg2)':'var(--surface)',border:`1px solid ${todo.done?'var(--border)':PRIO_COLORS[todo.priority-1]+'40'}`,borderRadius:16,padding:'13px 14px',transition:'all .2s'}}>
+        <div style={{display:'flex',alignItems:'center',gap:12}}>
+          <button onClick={()=>onToggle(todo.id)} className="press"
+            style={{width:28,height:28,borderRadius:9,flexShrink:0,border:`2px solid ${todo.done?'var(--ink4)':PRIO_COLORS[todo.priority-1]}`,background:todo.done?'var(--ink4)':'transparent',display:'flex',alignItems:'center',justifyContent:'center',transition:'all .2s'}}>
+            {todo.done&&<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--bg)" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
+          </button>
+          <div style={{flex:1,minWidth:0}}>
+            <p style={{fontSize:14,fontWeight:500,color:todo.done?'var(--ink4)':'var(--ink)',textDecoration:todo.done?'line-through':'none',lineHeight:1.3,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{todo.text}</p>
+            <div style={{display:'flex',gap:8,marginTop:4,alignItems:'center',flexWrap:'wrap'}}>
+              <span style={{fontSize:9,fontWeight:700,letterSpacing:'0.1em',textTransform:'uppercase',color:PRIO_COLORS[todo.priority-1],background:PRIO_COLORS[todo.priority-1]+'20',padding:'1px 7px',borderRadius:20,border:`1px solid ${PRIO_COLORS[todo.priority-1]}30`}}>{PRIO_LABELS[todo.priority-1]}</span>
+              {todo.dueDate&&<span style={{fontSize:10,color:overdue?'var(--red)':'var(--ink3)',fontWeight:overdue?700:400}}>{overdue?'⚠️ ':''}{fmt(todo.dueDate,{weekday:'short',day:'2-digit',month:'short'})}</span>}
+              {todo.category&&<span style={{fontSize:9,color:'var(--ink3)',background:'var(--surface2)',padding:'1px 7px',borderRadius:20,border:'1px solid var(--border)'}}>{todo.category}</span>}
+            </div>
+          </div>
+          <div style={{display:'flex',gap:6,flexShrink:0}}>
+            {!todo.done&&<button onClick={e=>{e.stopPropagation();setExpanded(s=>!s);}} className="press" style={{width:28,height:28,borderRadius:8,background:'var(--surface2)',border:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" strokeWidth="2.5" strokeLinecap="round"><polyline points={expanded?'18 15 12 9 6 15':'6 9 12 15 18 9'}/></svg>
+            </button>}
+            {editMode&&<button onClick={()=>onDelete(todo.id)} className="press" style={{width:28,height:28,borderRadius:8,background:'var(--red-bg)',border:'1px solid rgba(192,57,43,0.3)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#c0392b" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>}
+          </div>
+        </div>
+        {/* Day planning */}
+        {expanded&&!todo.done&&(
+          <div className="anim-pop" style={{marginTop:12,paddingTop:12,borderTop:'1px solid var(--border)'}}>
+            <p style={{fontSize:9,fontWeight:700,letterSpacing:'0.2em',textTransform:'uppercase',color:'var(--ink4)',marginBottom:8}}>Auf Tag planen</p>
+            <div style={{display:'flex',gap:5}}>
+              {Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()+i);const ds=d.toISOString().slice(0,10);const isSel=todo.dueDate===ds;return(
+                <button key={i} onClick={()=>onSetDay(todo.id,isSel?null:ds)} className="press"
+                  style={{flex:1,padding:'6px 2px',borderRadius:10,fontSize:9,fontWeight:700,textAlign:'center',background:isSel?PRIO_COLORS[todo.priority-1]:ds===todayStr()?'var(--surface2)':'var(--bg2)',color:isSel?'white':ds===todayStr()?'var(--ink)':'var(--ink3)',border:`1px solid ${isSel?PRIO_COLORS[todo.priority-1]:ds===todayStr()?'var(--border2)':'var(--border)'}`}}>
+                  <span style={{display:'block'}}>{DAYS[(d.getDay()+6)%7]}</span>
+                  <span style={{display:'block',fontSize:9,marginTop:1,opacity:.7}}>{d.getDate()}</span>
+                </button>
+              );})}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ── ADD HABIT SHEET ───────────────────────────────────────
+const AddHabitSheet=({onSave,onClose})=>{
+  const[name,setName]=useState('');
+  const[icon,setIcon]=useState('✅');
+  const[type,setType]=useState('check');
+  const[unit,setUnit]=useState('');
+  const[placeholder,setPlaceholder]=useState('');
+  const[category,setCategory]=useState('health');
+  const[color,setColor]=useState('#c9a84c');
+  const ICONS=['✅','🏃','💧','🥗','💊','📖','🧘','✍️','💉','🔥','⚡','🌙','💪','🎯','🫀','🧠'];
+  const COLORS=['#a07828','#9e2a20','#c0621a','#2c5878','#2d6e50','#6a4e90','#1a6e6a','#7a3d8a'];
+  return(
+    <div style={{position:'fixed',inset:0,zIndex:300,background:'rgba(0,0,0,0.7)',backdropFilter:'blur(8px)',display:'flex',alignItems:'flex-end'}} onClick={onClose}>
+      <div className="anim-sheet scroll" style={{width:'100%',maxWidth:430,margin:'0 auto',background:'var(--bg3)',borderTop:'1px solid var(--border2)',borderRadius:'24px 24px 0 0',padding:'24px 24px calc(var(--sab)+40px)',maxHeight:'85vh'}} onClick={e=>e.stopPropagation()}>
+        <div style={{width:36,height:3,borderRadius:2,background:'var(--ink4)',margin:'0 auto 20px'}}/>
+        <p className="serif" style={{fontSize:22,color:'var(--ink)',marginBottom:20,fontStyle:'italic'}}>Neue Gewohnheit</p>
+
+        <p style={{fontSize:9,fontWeight:700,letterSpacing:'0.2em',textTransform:'uppercase',color:'var(--ink4)',marginBottom:8}}>Icon</p>
+        <div style={{display:'flex',flexWrap:'wrap',gap:8,marginBottom:16}}>
+          {ICONS.map(ic=><button key={ic} onClick={()=>setIcon(ic)} className="press" style={{width:40,height:40,borderRadius:11,fontSize:20,background:icon===ic?'var(--gold-dim)':'var(--surface2)',border:`1.5px solid ${icon===ic?'var(--gold)':'var(--border)'}`}}>{ic}</button>)}
+        </div>
+
+        <p style={{fontSize:9,fontWeight:700,letterSpacing:'0.2em',textTransform:'uppercase',color:'var(--ink4)',marginBottom:8}}>Name</p>
+        <input value={name} onChange={e=>setName(e.target.value)} placeholder="Bezeichnung…"
+          style={{width:'100%',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:12,padding:'12px 14px',fontSize:15,fontWeight:500,color:'var(--ink)',marginBottom:14}}/>
+
+        <p style={{fontSize:9,fontWeight:700,letterSpacing:'0.2em',textTransform:'uppercase',color:'var(--ink4)',marginBottom:8}}>Typ</p>
+        <div style={{display:'flex',gap:8,marginBottom:14}}>
+          {[{v:'check',l:'✓ Abhaken'},{v:'number',l:'# Zahl'},{v:'measure',l:'📏 Messung'}].map(({v,l})=>(
+            <button key={v} onClick={()=>setType(v)} className="press" style={{flex:1,padding:'9px 6px',borderRadius:12,fontSize:11,fontWeight:600,background:type===v?'var(--gold)':'var(--surface2)',color:type===v?'var(--bg)':'var(--ink3)',border:`1px solid ${type===v?'var(--gold)':'var(--border)'}`}}>{l}</button>
+          ))}
+        </div>
+
+        {type!=='check'&&(
+          <>
+            <p style={{fontSize:9,fontWeight:700,letterSpacing:'0.2em',textTransform:'uppercase',color:'var(--ink4)',marginBottom:8}}>Einheit (optional)</p>
+            <input value={unit} onChange={e=>setUnit(e.target.value)} placeholder="z.B. kcal, kg, km…"
+              style={{width:'100%',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:12,padding:'11px 14px',fontSize:14,color:'var(--ink)',marginBottom:14}}/>
+            <p style={{fontSize:9,fontWeight:700,letterSpacing:'0.2em',textTransform:'uppercase',color:'var(--ink4)',marginBottom:8}}>Platzhaltertext</p>
+            <input value={placeholder} onChange={e=>setPlaceholder(e.target.value)} placeholder="z.B. 120/80"
+              style={{width:'100%',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:12,padding:'11px 14px',fontSize:14,color:'var(--ink)',marginBottom:14}}/>
+          </>
+        )}
+
+        <p style={{fontSize:9,fontWeight:700,letterSpacing:'0.2em',textTransform:'uppercase',color:'var(--ink4)',marginBottom:8}}>Farbe</p>
+        <div style={{display:'flex',gap:8,marginBottom:20}}>
+          {COLORS.map(c=><button key={c} onClick={()=>setColor(c)} className="press" style={{width:32,height:32,borderRadius:'50%',background:c,border:`3px solid ${color===c?'var(--ink)':'transparent'}`,boxShadow:color===c?`0 0 0 2px ${c}40`:''}}/>)}
+        </div>
+
+        <button onClick={()=>{if(!name.trim())return;onSave({id:'ch'+Date.now(),name,icon,type,unit,placeholder,category,color});}} className="press"
+          style={{width:'100%',padding:'14px',background:'var(--gold)',borderRadius:16,fontSize:14,fontWeight:600,color:'var(--bg)',boxShadow:'0 6px 20px rgba(201,168,76,0.3)'}}>
+          Gewohnheit anlegen ✓
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ── ADD TODO SHEET ────────────────────────────────────────
+const AddTodoSheet=({onSave,onClose})=>{
+  const[text,setText]=useState('');
+  const[priority,setPriority]=useState(3);
+  const[due,setDue]=useState(todayStr());
+  const[category,setCategory]=useState('');
+  const cats=['Arbeit','Haushalt','Familie','Gesundheit','Finanzen','Sonstiges'];
+  return(
+    <div style={{position:'fixed',inset:0,zIndex:300,background:'rgba(0,0,0,0.7)',backdropFilter:'blur(8px)',display:'flex',alignItems:'flex-end'}} onClick={onClose}>
+      <div className="anim-sheet scroll" style={{width:'100%',maxWidth:430,margin:'0 auto',background:'var(--bg3)',borderTop:'1px solid var(--border2)',borderRadius:'24px 24px 0 0',padding:'24px 24px calc(var(--sab)+40px)',maxHeight:'90vh'}} onClick={e=>e.stopPropagation()}>
+        <div style={{width:36,height:3,borderRadius:2,background:'var(--ink4)',margin:'0 auto 20px'}}/>
+        <p className="serif" style={{fontSize:22,color:'var(--ink)',marginBottom:20,fontStyle:'italic'}}>Neue Aufgabe</p>
+
+        <textarea value={text} onChange={e=>setText(e.target.value)} placeholder="Aufgabe beschreiben…" rows={2}
+          style={{width:'100%',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:14,padding:'13px 15px',fontSize:15,fontWeight:400,color:'var(--ink)',resize:'none',marginBottom:16,fontFamily:'DM Sans,sans-serif'}}/>
+
+        <p style={{fontSize:9,fontWeight:700,letterSpacing:'0.2em',textTransform:'uppercase',color:'var(--ink4)',marginBottom:8}}>Dringlichkeit</p>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:7,marginBottom:16}}>
+          {[1,2,3,4].map(p=>(
+            <button key={p} onClick={()=>setPriority(p)} className="press"
+              style={{padding:'10px 4px',borderRadius:12,fontSize:11,fontWeight:700,textAlign:'center',background:priority===p?PRIO_COLORS[p-1]:PRIO_COLORS[p-1]+'15',color:priority===p?'white':PRIO_COLORS[p-1],border:`1.5px solid ${PRIO_COLORS[p-1]}${priority===p?'':'50'}`}}>
+              {PRIO_LABELS[p-1]}
+            </button>
+          ))}
+        </div>
+
+        <p style={{fontSize:9,fontWeight:700,letterSpacing:'0.2em',textTransform:'uppercase',color:'var(--ink4)',marginBottom:8}}>Fällig am</p>
+        <input type="date" value={due} onChange={e=>setDue(e.target.value)}
+          style={{width:'100%',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:12,padding:'11px 14px',fontSize:14,fontWeight:500,color:'var(--ink)',marginBottom:14,colorScheme:'dark'}}/>
+
+        <p style={{fontSize:9,fontWeight:700,letterSpacing:'0.2em',textTransform:'uppercase',color:'var(--ink4)',marginBottom:8}}>Kategorie</p>
+        <div className="scroll-x" style={{display:'flex',gap:7,marginBottom:20,paddingBottom:2}}>
+          {cats.map(c=><button key={c} onClick={()=>setCategory(c===category?'':c)} className="press" style={{flexShrink:0,padding:'6px 13px',borderRadius:20,fontSize:11,fontWeight:600,background:category===c?'var(--gold)':'var(--surface2)',color:category===c?'var(--bg)':'var(--ink3)',border:`1px solid ${category===c?'var(--gold)':'var(--border)'}`}}>{c}</button>)}
+        </div>
+
+        <button onClick={()=>{if(!text.trim())return;onSave({id:'t'+Date.now(),text,priority,dueDate:due,category,done:false,createdAt:todayStr()});}} className="press"
+          style={{width:'100%',padding:'14px',background:PRIO_COLORS[priority-1],borderRadius:16,fontSize:14,fontWeight:600,color:'white',boxShadow:`0 6px 20px ${PRIO_COLORS[priority-1]}40`}}>
+          Aufgabe hinzufügen ✓
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ── STREAK BADGE ──────────────────────────────────────────
+const StreakBadge=({log,habitId})=>{
+  const streak=useMemo(()=>{let s=0,d=new Date();for(let i=0;i<365;i++){const ds=d.toISOString().slice(0,10);if(log.find(l=>l.habitId===habitId&&l.date===ds)){s++;}else if(i>0)break;d.setDate(d.getDate()-1);}return s;},[log,habitId]);
+  if(streak<2)return null;
+  return<span style={{fontSize:10,color:'var(--gold)',fontWeight:700,background:'var(--gold-dim)',padding:'1px 7px',borderRadius:20,border:'1px solid rgba(201,168,76,0.2)'}}>{streak}🔥</span>;
+};
+
+// ── WEEK GRID ─────────────────────────────────────────────
+const WeekGrid=({habits,log})=>{
+  const days=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d.toISOString().slice(0,10);});
+  const today=todayStr();
+  return(
+    <div className="card" style={{padding:'16px',marginBottom:12}}>
+      <p style={{fontSize:9,fontWeight:700,letterSpacing:'0.2em',textTransform:'uppercase',color:'var(--ink4)',marginBottom:12}}>Diese Woche</p>
+      <div style={{display:'grid',gridTemplateColumns:`repeat(8,1fr)`,gap:4}}>
+        <div/>
+        {days.map(d=>{const dow=(new Date(d+'T12:00:00').getDay()+6)%7;return(
+          <div key={d} style={{textAlign:'center'}}>
+            <p style={{fontSize:8,color:d===today?'var(--gold)':'var(--ink4)',fontWeight:d===today?700:400,marginBottom:3}}>{DAYS[dow]}</p>
+            <p style={{fontSize:8,color:d===today?'var(--gold)':'var(--ink4)'}}>{new Date(d+'T12:00:00').getDate()}</p>
+          </div>
+        );})}
+        {habits.map(h=>{
+          return(
+            <React.Fragment key={h.id}>
+              <div style={{display:'flex',alignItems:'center',paddingRight:4}}>
+                <span style={{fontSize:13}}>{h.icon}</span>
+              </div>
+              {days.map(d=>{const entry=log.find(l=>l.habitId===h.id&&l.date===d);return(
+                <div key={d} style={{aspectRatio:'1',borderRadius:6,background:entry?h.color:d===today?'var(--surface2)':'var(--bg2)',border:`1px solid ${entry?h.color+'60':'var(--border)'}`,display:'flex',alignItems:'center',justifyContent:'center',transition:'all .2s'}}>
+                  {entry&&entry.value&&<span style={{fontSize:5,color:'white',fontWeight:700,overflow:'hidden'}}>✓</span>}
+                  {entry&&!entry.value&&<svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                </div>
+              );})}
+            </React.Fragment>
+          );
+        })}
+      </div>
+      <div style={{display:'flex',justifyContent:'space-between',marginTop:12}}>
+        <span style={{fontSize:10,color:'var(--ink4)'}}>Rate heute: {days[6]===today?Math.round(habits.filter(h=>log.find(l=>l.habitId===h.id&&l.date===today)).length/Math.max(habits.length,1)*100)+'%':''}</span>
+        <span style={{fontSize:10,color:'var(--gold)'}}>
+          {habits.filter(h=>log.find(l=>l.habitId===h.id&&l.date===today)).length}/{habits.length} heute ✓
+        </span>
+      </div>
+    </div>
+  );
+};
+
+// ── QUOTE TICKER ──────────────────────────────────────────
+const QuoteTicker=()=>{
+  const q=useMemo(()=>QUOTES[Math.floor(Math.random()*QUOTES.length)],[]);
+  return(
+    <div style={{padding:'14px 18px',background:'var(--bg2)',borderTop:'1px solid var(--border)',borderBottom:'1px solid var(--border)',marginBottom:20}}>
+      <p className="serif" style={{fontSize:13,color:'var(--ink2)',fontStyle:'italic',lineHeight:1.6,marginBottom:4}}>„{q.text}"</p>
+      <p style={{fontSize:9,fontWeight:700,letterSpacing:'0.15em',textTransform:'uppercase',color:'var(--gold)',opacity:0.8}}>— {q.author}</p>
+    </div>
+  );
+};
+
+// ── PROGRESS VIEW ─────────────────────────────────────────
+const ProgressView=({habits,log,todos})=>{
+  const[period,setPeriod]=useState('week');
+  const now=new Date();
+
+  const periodData=useMemo(()=>{
+    const periods=period==='week'?8:5;
+    return Array.from({length:periods},(_,i)=>{
+      let start,end,label;
+      if(period==='week'){
+        const d=new Date(now);d.setDate(d.getDate()-i*7);
+        const wk=isoWeek(d);
+        const days=Array.from({length:7},(_,j)=>{const dd=new Date(d);dd.setDate(dd.getDate()-dd.getDay()+1+j);return dd.toISOString().slice(0,10);});
+        const entries=log.filter(l=>days.includes(l.date));
+        const possible=habits.length*7;
+        const done=entries.length;
+        label=`KW${wk}`;
+        return{label,done,possible,rate:possible?Math.round(done/possible*100):0,isCur:i===0};
+      }else{
+        const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+        const mEnd=new Date(d.getFullYear(),d.getMonth()+1,0);
+        const days=Array.from({length:mEnd.getDate()},(_,j)=>new Date(d.getFullYear(),d.getMonth(),j+1).toISOString().slice(0,10));
+        const entries=log.filter(l=>days.includes(l.date));
+        const possible=habits.length*days.length;
+        label=d.toLocaleString('de-DE',{month:'short',year:'2-digit'});
+        return{label,done:entries.length,possible,rate:possible?Math.round(entries.length/possible*100):0,isCur:i===0};
+      }
+    }).reverse();
+  },[habits,log,period]);
+
+  const maxRate=Math.max(...periodData.map(d=>d.rate),1);
+
+  // Per-habit stats
+  const habitStats=habits.map(h=>{
+    const hLog=log.filter(l=>l.habitId===h.id);
+    let streak=0;const d=new Date();
+    for(let i=0;i<365;i++){const ds=d.toISOString().slice(0,10);if(hLog.find(l=>l.date===ds)){streak++;}else if(i>0)break;d.setDate(d.getDate()-1);}
+    const last30=Array.from({length:30},(_,i)=>{const d2=new Date(now);d2.setDate(d2.getDate()-i);return d2.toISOString().slice(0,10);}).filter(ds=>hLog.find(l=>l.date===ds)).length;
+    return{...h,streak,rate30:Math.round(last30/30*100),total:hLog.length};
+  });
+
+  // Blood pressure chart
+  const bpLog=log.filter(l=>{const h=habits.find(x=>x.id===l.habitId&&x.type==='measure');return h&&l.value;}).slice(-14);
+
+  return(
+    <div style={{paddingTop:20,paddingBottom:'var(--bottom-safe)'}}>
+      <p className="serif" style={{fontSize:32,fontStyle:'italic',marginBottom:4}}>Fortschritt</p>
+      <div style={{height:1,background:'linear-gradient(90deg,var(--gold),transparent)',marginBottom:20}}/>
+
+      <div style={{display:'flex',gap:6,marginBottom:16}}>
+        {[{v:'week',l:'Woche'},{v:'month',l:'Monat'}].map(({v,l})=>(
+          <button key={v} onClick={()=>setPeriod(v)} className="press"
+            style={{flex:1,padding:'10px',borderRadius:14,fontSize:12,fontWeight:600,background:period===v?'var(--gold)':'var(--surface)',color:period===v?'var(--bg)':'var(--ink3)',border:`1px solid ${period===v?'var(--gold)':'var(--border)'}`}}>{l}</button>
+        ))}
+      </div>
+
+      {/* Completion rate chart */}
+      <div className="card" style={{padding:'16px',marginBottom:12}}>
+        <p style={{fontSize:9,fontWeight:700,letterSpacing:'0.2em',textTransform:'uppercase',color:'var(--ink4)',marginBottom:14}}>Habit-Erfüllungsrate</p>
+        <div style={{display:'flex',alignItems:'flex-end',gap:4,height:80}}>
+          {periodData.map((d,i)=>(
+            <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3}}>
+              <span style={{fontSize:8,color:d.isCur?'var(--gold)':'var(--ink4)',fontWeight:d.isCur?700:400}}>{d.rate>0?d.rate+'%':''}</span>
+              <div style={{width:'100%',background:d.isCur?'var(--gold)':'var(--gold-dim)',border:`1px solid ${d.isCur?'var(--gold)':'rgba(201,168,76,0.2)'}`,borderRadius:'4px 4px 0 0',height:d.rate>0?Math.max((d.rate/maxRate)*64,4):2,transition:'height .5s'}}/>
+            </div>
+          ))}
+        </div>
+        <div style={{display:'flex',gap:4,marginTop:4}}>
+          {periodData.map((d,i)=><div key={i} style={{flex:1,textAlign:'center'}}><p style={{fontSize:7,color:d.isCur?'var(--gold)':'var(--ink4)',fontWeight:d.isCur?700:400}}>{d.label}</p></div>)}
+        </div>
+      </div>
+
+      {/* Per-habit table */}
+      <p style={{fontSize:9,fontWeight:700,letterSpacing:'0.2em',textTransform:'uppercase',color:'var(--ink4)',marginBottom:10,display:'flex',alignItems:'center',gap:10}}>
+        Gewohnheiten<span style={{flex:1,height:1,background:'linear-gradient(90deg,var(--gold),transparent)',opacity:.3}}/>
+      </p>
+      {habitStats.map(h=>(
+        <div key={h.id} className="card-flat" style={{display:'flex',alignItems:'center',gap:12,padding:'12px 14px',marginBottom:8}}>
+          <span style={{fontSize:20,flexShrink:0}}>{h.icon}</span>
+          <div style={{flex:1,minWidth:0}}>
+            <p style={{fontSize:13,fontWeight:500,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{h.name}</p>
+            <div style={{display:'flex',gap:8,marginTop:4}}>
+              <span style={{fontSize:10,color:'var(--ink3)'}}>{h.total} Einträge</span>
+              <span style={{fontSize:10,color:'var(--gold)',fontWeight:600}}>{h.rate30}% (30T)</span>
+              {h.streak>1&&<span style={{fontSize:10,color:'var(--gold)'}}>{h.streak}🔥</span>}
+            </div>
+            <div style={{height:3,background:'var(--bg2)',borderRadius:2,marginTop:6,overflow:'hidden'}}>
+              <div style={{height:'100%',background:h.color,borderRadius:2,width:`${h.rate30}%`,transition:'width .6s'}}/>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {/* Todo stats */}
+      <div className="ornament"><span>Aufgaben</span></div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8,marginBottom:12}}>
+        {[
+          {l:'Offen',v:todos.filter(t=>!t.done).length,c:'var(--ink)'},
+          {l:'Erledigt',v:todos.filter(t=>t.done).length,c:'var(--green)'},
+          {l:'Kritisch',v:todos.filter(t=>!t.done&&t.priority===1).length,c:'var(--red)'},
+        ].map(({l,v,c})=>(
+          <div key={l} className="card" style={{padding:'14px 8px',textAlign:'center'}}>
+            <p className="serif" style={{fontSize:30,color:c,lineHeight:1}}>{v}</p>
+            <p style={{fontSize:9,fontWeight:700,color:'var(--ink4)',marginTop:4,letterSpacing:'0.1em',textTransform:'uppercase'}}>{l}</p>
+          </div>
+        ))}
+      </div>
+      {/* Overdue */}
+      {todos.filter(t=>!t.done&&t.dueDate&&t.dueDate<todayStr()).length>0&&(
+        <div style={{background:'var(--red-bg)',border:'1px solid rgba(192,57,43,0.3)',borderRadius:14,padding:'12px 14px'}}>
+          <p style={{fontSize:12,fontWeight:600,color:'#c0392b',marginBottom:8}}>⚠️ Überfällig</p>
+          {todos.filter(t=>!t.done&&t.dueDate&&t.dueDate<todayStr()).map(t=>(
+            <p key={t.id} style={{fontSize:12,color:'var(--ink2)',marginBottom:4}}>· {t.text}</p>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+
+// ── SETTINGS VIEW ─────────────────────────────────────────
+const SettingsView=({habits,log,todos,onPush,onPull,onTest,ghStatus,ghMsg})=>{
+  const GH_KEY='stoic_gh_settings';
+  const getS=()=>{try{return JSON.parse(localStorage.getItem(GH_KEY)||'{}');}catch(e){return{};}};
+  const s=getS();
+  const[token,setToken]=React.useState(s.token||'');
+  const[repo,setRepo]=React.useState(s.repo||'');
+  const[filename,setFilename]=React.useState(s.filename||'stoic-daten.json');
+  const[autoPush,setAutoPush]=React.useState(!!s.autoPush);
+  const lastSync=s.lastSync?new Date(s.lastSync).toLocaleString('de-DE'):'–';
+
+  const save=(t,r,fn,ap)=>{
+    localStorage.setItem(GH_KEY,JSON.stringify({token:t,repo:r,filename:fn,autoPush:ap,lastSync:getS().lastSync||null}));
+  };
+
+  const statusColor={idle:'var(--ink4)',syncing:'var(--gold)',ok:'var(--green)',error:'var(--red)'}[ghStatus]||'var(--ink4)';
+
+  const inp={width:'100%',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:12,padding:'11px 14px',fontSize:13,color:'var(--ink)',fontFamily:'DM Sans,sans-serif'};
+
+  return(
+    <div style={{paddingTop:20,paddingBottom:'var(--bottom-safe)'}}>
+      <p className="serif" style={{fontSize:32,fontStyle:'italic',marginBottom:4}}>Einstellungen</p>
+      <div style={{height:1,background:'linear-gradient(90deg,var(--gold),transparent)',marginBottom:24}}/>
+
+      {/* GitHub Sync Card */}
+      <div className="card" style={{marginBottom:16}}>
+        <div style={{padding:'14px 16px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',gap:10}}>
+          <span style={{fontSize:20}}>🐙</span>
+          <p className="serif" style={{fontSize:18,fontStyle:'italic',flex:1}}>GitHub Sync</p>
+          <span style={{fontSize:11,fontWeight:600,padding:'3px 10px',borderRadius:20,background:ghStatus==='ok'?'rgba(45,110,80,0.15)':ghStatus==='error'?'rgba(158,42,32,0.12)':'var(--surface2)',color:statusColor}}>
+            {ghStatus==='idle'?'⚪ Nicht verbunden':ghStatus==='syncing'?'⏳ Lädt…':ghStatus==='ok'?'🟢 Verbunden':'🔴 Fehler'}
+          </span>
+        </div>
+        <div style={{padding:'16px'}}>
+
+          {/* Status message */}
+          {ghMsg&&<div style={{padding:'8px 12px',borderRadius:10,background:ghStatus==='error'?'var(--red-bg)':'var(--green-bg)',border:`1px solid ${ghStatus==='error'?'rgba(158,42,32,0.2)':'rgba(45,110,80,0.2)'}`,fontSize:12,color:statusColor,marginBottom:14}}>{ghMsg}</div>}
+
+          <p style={{fontSize:9,fontWeight:700,letterSpacing:'0.2em',textTransform:'uppercase',color:'var(--ink4)',marginBottom:6}}>GitHub Token (ghp_…)</p>
+          <input type="password" value={token} onChange={e=>{setToken(e.target.value);save(e.target.value,repo,filename,autoPush);}}
+            placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style={{...inp,marginBottom:12,fontFamily:'DM Mono,monospace',fontSize:12}}/>
+
+          <p style={{fontSize:9,fontWeight:700,letterSpacing:'0.2em',textTransform:'uppercase',color:'var(--ink4)',marginBottom:6}}>Repository (nutzer/repo)</p>
+          <input type="text" value={repo} onChange={e=>{setRepo(e.target.value);save(token,e.target.value,filename,autoPush);}}
+            placeholder="maxmustermann/mein-backup" style={{...inp,marginBottom:12}}/>
+
+          <p style={{fontSize:9,fontWeight:700,letterSpacing:'0.2em',textTransform:'uppercase',color:'var(--ink4)',marginBottom:6}}>Dateiname</p>
+          <input type="text" value={filename} onChange={e=>{setFilename(e.target.value);save(token,repo,e.target.value,autoPush);}}
+            placeholder="stoic-daten.json" style={{...inp,marginBottom:16}}/>
+
+          {/* Auto push toggle */}
+          <label style={{display:'flex',alignItems:'center',gap:10,marginBottom:16,cursor:'pointer'}}>
+            <div onClick={()=>{const n=!autoPush;setAutoPush(n);save(token,repo,filename,n);}}
+              style={{width:44,height:24,borderRadius:12,background:autoPush?'var(--gold)':'var(--surface2)',border:`1px solid ${autoPush?'var(--gold)':'var(--border)'}`,position:'relative',transition:'all .2s',flexShrink:0}}>
+              <div style={{position:'absolute',top:2,left:autoPush?'calc(100% - 22px)':2,width:18,height:18,borderRadius:'50%',background:autoPush?'var(--bg)':'var(--ink4)',transition:'left .2s'}}/>
+            </div>
+            <div>
+              <p style={{fontSize:13,fontWeight:500,color:'var(--ink)'}}>Auto-Sync beim Speichern</p>
+              <p style={{fontSize:10,color:'var(--ink4)'}}>Automatisch auf GitHub sichern bei jeder Änderung</p>
+            </div>
+          </label>
+
+          {/* Action buttons */}
+          <div style={{display:'flex',gap:8,marginBottom:14}}>
+            <button onClick={onTest} className="press" style={{flex:1,padding:'10px',borderRadius:13,fontSize:12,fontWeight:600,background:'var(--surface2)',color:'var(--ink2)',border:'1px solid var(--border)'}}>
+              🔌 Testen
+            </button>
+            <button onClick={()=>onPull()} className="press" style={{flex:1,padding:'10px',borderRadius:13,fontSize:12,fontWeight:600,background:'var(--surface2)',color:'var(--ink2)',border:'1px solid var(--border)'}}>
+              ⬇️ Laden
+            </button>
+            <button onClick={()=>onPush(habits,log,todos)} className="press" style={{flex:1,padding:'10px',borderRadius:13,fontSize:12,fontWeight:600,background:'var(--gold)',color:'var(--bg)',border:'1px solid var(--gold)'}}>
+              ⬆️ Speichern
+            </button>
+          </div>
+
+          {/* Last sync */}
+          <p style={{fontSize:10,color:'var(--ink4)',textAlign:'right'}}>🕐 Zuletzt synchronisiert: {lastSync}</p>
+
+          {/* Setup hint */}
+          <div style={{marginTop:14,padding:'12px 14px',background:'var(--bg2)',borderRadius:12,border:'1px solid var(--border)'}}>
+            <p style={{fontSize:11,fontWeight:700,color:'var(--ink3)',marginBottom:6}}>🛠 Setup-Anleitung</p>
+            <p style={{fontSize:11,color:'var(--ink4)',lineHeight:1.7}}>
+              1. Erstelle ein <strong>privates</strong> GitHub-Repository<br/>
+              2. Gehe zu: Settings → Developer settings → Personal access tokens → Tokens (classic)<br/>
+              3. Erstelle einen Token mit <strong>repo</strong>-Berechtigung<br/>
+              4. Token hier einfügen → Verbindung testen → Speichern
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Data stats */}
+      <div className="card">
+        <div style={{padding:'14px 16px',borderBottom:'1px solid var(--border)'}}>
+          <p className="serif" style={{fontSize:18,fontStyle:'italic'}}>Datenspeicher</p>
+        </div>
+        <div style={{padding:'16px',display:'flex',gap:10}}>
+          {[
+            {v:habits.length,l:'Gewohnheiten'},
+            {v:log.length,l:'Einträge'},
+            {v:todos.length,l:'Aufgaben'},
+          ].map(({v,l})=>(
+            <div key={l} style={{flex:1,textAlign:'center',padding:'12px',background:'var(--surface2)',borderRadius:12,border:'1px solid var(--border)'}}>
+              <p className="mono" style={{fontSize:24,fontWeight:700,color:'var(--gold)'}}>{v}</p>
+              <p style={{fontSize:9,color:'var(--ink4)',marginTop:2,textTransform:'uppercase',letterSpacing:'0.1em'}}>{l}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ════════════════════════════════════════════════════════
+// MAIN APP
+// ════════════════════════════════════════════════════════
+const App=()=>{
+  const[tab,setTab]=useState('today');
+  const[habits,setHabits]=useState(DEFAULT_HABITS);
+  const[log,setLog]=useState([]);           // [{id,habitId,date,value?}]
+  const[todos,setTodos]=useState([]);
+  const[inputSheet,setInputSheet]=useState(null); // habit obj
+  const[showAddHabit,setShowAddHabit]=useState(false);
+  const[showAddTodo,setShowAddTodo]=useState(false);
+  const[editMode,setEditMode]=useState(false);
+  const[todoFilter,setTodoFilter]=useState('all'); // all | today | done
+  const[showSettings,setShowSettings]=useState(false);
+  const[ghStatus,setGhStatus]=useState('idle'); // idle | syncing | ok | error
+  const[ghMsg,setGhMsg]=useState('');
+
+  // Persist
+  useEffect(()=>{
+    try{const d=JSON.parse(localStorage.getItem(SK)||'{}');
+      if(d.habits)setHabits(d.habits);
+      if(d.log)setLog(d.log);
+      if(d.todos)setTodos(d.todos);
+    }catch(e){}
+  },[]);
+  useEffect(()=>{
+    localStorage.setItem(SK,JSON.stringify({habits,log,todos}));
+    // Auto-push if enabled
+    const s=getGhSettings();
+    if(s.autoPush&&s.token&&s.repo){
+      clearTimeout(window._stoicAutoPushTimer);
+      window._stoicAutoPushTimer=setTimeout(()=>ghPush(habits,log,todos),8000);
+    }
+  },[habits,log,todos]);
+
+  // ── GITHUB SYNC ────────────────────────────────────────
+  const GH_KEY='stoic_gh_settings';
+  const getGhSettings=()=>{try{return JSON.parse(localStorage.getItem(GH_KEY)||'{}');}catch(e){return{};}};
+  const saveGhSettings=s=>localStorage.setItem(GH_KEY,JSON.stringify(s));
+
+  const ghPush=async(habitsD,logD,todosD)=>{
+    const s=getGhSettings();
+    if(!s.token||!s.repo){setGhMsg('Token und Repository eintragen!');return false;}
+    setGhStatus('syncing');setGhMsg('Wird gespeichert…');
+    const filename=s.filename||'stoic-daten.json';
+    const payload=JSON.stringify({habits:habitsD,log:logD,todos:todosD},null,2);
+    const encoded=btoa(unescape(encodeURIComponent(payload)));
+    try{
+      let sha=null;
+      try{const r=await fetch(`https://api.github.com/repos/${s.repo}/contents/${filename}`,{headers:{'Authorization':'token '+s.token,'Accept':'application/vnd.github.v3+json'}});if(r.ok){const d=await r.json();sha=d.sha;}}catch(e){}
+      const body={message:'💾 Stoic Backup '+new Date().toLocaleString('de-DE'),content:encoded,...(sha?{sha}:{})};
+      const res=await fetch(`https://api.github.com/repos/${s.repo}/contents/${filename}`,{method:'PUT',headers:{'Authorization':'token '+s.token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},body:JSON.stringify(body)});
+      if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.message||'HTTP '+res.status);}
+      const now=new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+      setGhStatus('ok');setGhMsg('✓ Gespeichert '+now);
+      const ns={...s,lastSync:new Date().toISOString()};saveGhSettings(ns);
+      return true;
+    }catch(e){setGhStatus('error');setGhMsg('Fehler: '+e.message);return false;}
+  };
+
+  const ghPull=async()=>{
+    const s=getGhSettings();
+    if(!s.token||!s.repo){setGhMsg('Token und Repository eintragen!');return;}
+    setGhStatus('syncing');setGhMsg('Wird geladen…');
+    const filename=s.filename||'stoic-daten.json';
+    try{
+      const res=await fetch(`https://api.github.com/repos/${s.repo}/contents/${filename}`,{headers:{'Authorization':'token '+s.token,'Accept':'application/vnd.github.v3+json'}});
+      if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.message||'HTTP '+res.status);}
+      const data=await res.json();
+      const decoded=decodeURIComponent(escape(atob(data.content.replace(/\n/g,''))));
+      const parsed=JSON.parse(decoded);
+      if(!window.confirm('Daten von GitHub laden?\nAktuelle Daten werden überschrieben.'))return;
+      if(parsed.habits)setHabits(parsed.habits);
+      if(parsed.log)setLog(parsed.log);
+      if(parsed.todos)setTodos(parsed.todos);
+      setGhStatus('ok');setGhMsg('✓ Geladen '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}));
+    }catch(e){setGhStatus('error');setGhMsg('Fehler: '+e.message);}
+  };
+
+  const ghTest=async()=>{
+    const s=getGhSettings();
+    if(!s.token||!s.repo){setGhMsg('Token und Repository eintragen!');return;}
+    setGhStatus('syncing');setGhMsg('Verbindung wird geprüft…');
+    try{
+      const res=await fetch(`https://api.github.com/repos/${s.repo}`,{headers:{'Authorization':'token '+s.token,'Accept':'application/vnd.github.v3+json'}});
+      if(!res.ok)throw new Error('HTTP '+res.status);
+      const d=await res.json();
+      setGhStatus('ok');setGhMsg('✓ Verbunden: '+d.full_name+(d.private?' 🔒':''));
+    }catch(e){setGhStatus('error');setGhMsg('Fehler: '+e.message);}
+  };
+
+  const today=todayStr();
+  const todayDow=(new Date().getDay()+6)%7;
+
+  const completeHabit=(id,val)=>{
+    setLog(l=>{
+      const existing=l.findIndex(x=>x.habitId===id&&x.date===today);
+      if(existing>=0){const n=[...l];n.splice(existing,1);return n;} // toggle off
+      return[...l,{id:'l'+Date.now(),habitId:id,date:today,value:val===true?null:val}];
+    });
+  };
+
+  const addTodo=todo=>setTodos(t=>[todo,...t]);
+  const toggleTodo=id=>setTodos(t=>t.map(x=>x.id===id?{...x,done:!x.done}:x));
+  const setTodoDay=(id,date)=>setTodos(t=>t.map(x=>x.id===id?{...x,dueDate:date}:x));
+  const deleteTodo=id=>setTodos(t=>t.filter(x=>x.id!==id));
+
+  const todayCompletion=Math.round(habits.filter(h=>log.find(l=>l.habitId===h.id&&l.date===today)).length/Math.max(habits.length,1)*100);
+
+  const filteredTodos=useMemo(()=>{
+    let t=[...todos];
+    if(todoFilter==='today')t=t.filter(x=>!x.done&&x.dueDate===today);
+    else if(todoFilter==='done')t=t.filter(x=>x.done);
+    else t=t.filter(x=>!x.done);
+    return t.sort((a,b)=>a.priority-b.priority||(a.dueDate||'z').localeCompare(b.dueDate||'z'));
+  },[todos,todoFilter,today]);
+
+  const quote=useMemo(()=>QUOTES[new Date().getDay()%QUOTES.length],[]);
+
+  return(
+    <div style={{maxWidth:430,margin:'0 auto',height:'100vh',display:'flex',flexDirection:'column',overflow:'hidden',background:'var(--bg)'}}>
+      {inputSheet&&<InputSheet habit={inputSheet} onSave={v=>{completeHabit(inputSheet.id,v);setInputSheet(null);}} onClose={()=>setInputSheet(null)}/>}
+      {showAddHabit&&<AddHabitSheet onSave={h=>{setHabits(hs=>[...hs,h]);setShowAddHabit(false);}} onClose={()=>setShowAddHabit(false)}/>}
+      {showAddTodo&&<AddTodoSheet onSave={t=>{addTodo(t);setShowAddTodo(false);}} onClose={()=>setShowAddTodo(false)}/>}
+
+      {/* HEADER */}
+      <header className="nav-blur" style={{padding:'48px 22px 14px',borderBottom:'1px solid var(--border)',flexShrink:0}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end'}}>
+          <div>
+            <p style={{fontSize:9,fontWeight:700,letterSpacing:'0.3em',textTransform:'uppercase',color:'var(--ink4)',marginBottom:2}}>
+              {new Date().toLocaleDateString('de-DE',{weekday:'long'})} · {new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'long'})}
+            </p>
+            <p className="serif-bold" style={{fontSize:28,lineHeight:1,color:'var(--ink)',fontStyle:'italic'}}>Stoic</p>
+            <p style={{fontSize:8,letterSpacing:'0.25em',textTransform:'uppercase',color:'var(--gold)',opacity:.7,marginTop:1}}>— discipline is freedom —</p>
+          </div>
+          {tab==='today'&&(
+            <div style={{textAlign:'right'}}>
+              <div style={{width:52,height:52,borderRadius:'50%',border:`2px solid var(--gold)`,display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}>
+                <svg style={{position:'absolute',inset:0}} width="52" height="52" viewBox="0 0 52 52">
+                  <circle cx="26" cy="26" r="23" fill="none" stroke="var(--border2)" strokeWidth="2"/>
+                  <circle cx="26" cy="26" r="23" fill="none" stroke="var(--gold)" strokeWidth="2" strokeLinecap="round"
+                    strokeDasharray={2*Math.PI*23} strokeDashoffset={2*Math.PI*23*(1-todayCompletion/100)} style={{transform:'rotate(-90deg)',transformOrigin:'center',transition:'stroke-dashoffset .5s'}}/>
+                </svg>
+                <p className="mono" style={{fontSize:11,fontWeight:700,color:'var(--gold)'}}>{todayCompletion}%</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </header>
+
+      {/* MAIN */}
+      <main className="scroll" style={{flex:1,padding:'0 20px'}}>
+
+        {/* ══ TODAY ══════════════════════════════════════ */}
+        {tab==='today'&&(
+          <div style={{paddingTop:0,paddingBottom:'var(--bottom-safe)'}}>
+            {/* Quote */}
+            <div style={{padding:'16px 0 4px'}}>
+              <p className="serif" style={{fontSize:13,color:'var(--ink3)',fontStyle:'italic',lineHeight:1.7}}>„{quote.text}"</p>
+              <p style={{fontSize:9,fontWeight:700,letterSpacing:'0.15em',textTransform:'uppercase',color:'var(--gold)',marginTop:4,opacity:.7}}>— {quote.author}</p>
+            </div>
+            <div style={{height:1,background:'linear-gradient(90deg,rgba(150,120,70,0.5),transparent)',margin:'16px 0'}}/>
+
+            {/* Week grid */}
+            <WeekGrid habits={habits} log={log}/>
+
+            {/* Habits section */}
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
+              <p style={{fontSize:9,fontWeight:700,letterSpacing:'0.25em',textTransform:'uppercase',color:'var(--gold)'}}>Gewohnheiten</p>
+              <div style={{display:'flex',gap:8}}>
+                <button onClick={()=>setEditMode(s=>!s)} className="press" style={{fontSize:11,fontWeight:600,color:editMode?'var(--red)':'var(--ink3)',background:'var(--surface2)',padding:'5px 12px',borderRadius:20,border:'1px solid var(--border)'}}>
+                  {editMode?'Fertig':'Verwalten'}
+                </button>
+                <button onClick={()=>setShowAddHabit(true)} className="press" style={{fontSize:11,fontWeight:700,color:'var(--bg)',background:'var(--gold)',padding:'5px 13px',borderRadius:20}}>
+                  + Neu
+                </button>
+              </div>
+            </div>
+
+            {habits.map((h,i)=>(
+              <HabitCard key={h.id} habit={h} log={log.filter(l=>l.habitId===h.id)}
+                onComplete={completeHabit}
+                onOpenInput={setInputSheet}
+                onDelete={id=>setHabits(hs=>hs.filter(x=>x.id!==id))}
+                editMode={editMode}/>
+            ))}
+
+            {habits.length===0&&(
+              <div style={{textAlign:'center',padding:'40px 20px',background:'var(--surface)',borderRadius:18,border:'1px solid var(--border)'}}>
+                <p style={{fontSize:32,marginBottom:10}}>🌿</p>
+                <p className="serif" style={{fontSize:18,color:'var(--ink2)',fontStyle:'italic'}}>Beginne mit einer Gewohnheit</p>
+              </div>
+            )}
+
+            {/* Today's todos */}
+            {todos.filter(t=>!t.done&&t.dueDate===today).length>0&&(
+              <>
+                <div className="ornament"><span>Heute fällig</span></div>
+                {todos.filter(t=>!t.done&&t.dueDate===today).sort((a,b)=>a.priority-b.priority).map(t=>(
+                  <TodoItem key={t.id} todo={t} onToggle={toggleTodo} onDelete={deleteTodo} onSetDay={setTodoDay} editMode={editMode}/>
+                ))}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ══ TODOS ═════════════════════════════════════ */}
+        {tab==='todos'&&(
+          <div style={{paddingTop:20,paddingBottom:'var(--bottom-safe)'}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+              <p className="serif" style={{fontSize:30,fontStyle:'italic'}}>Aufgaben</p>
+              <button onClick={()=>setShowAddTodo(true)} className="press"
+                style={{padding:'9px 18px',background:'var(--gold)',borderRadius:20,color:'var(--bg)',fontSize:12,fontWeight:700,boxShadow:'0 4px 14px rgba(201,168,76,0.3)'}}>
+                + Aufgabe
+              </button>
+            </div>
+
+            {/* Filter pills */}
+            <div style={{display:'flex',gap:7,marginBottom:16}}>
+              {[{v:'all',l:`Offen (${todos.filter(t=>!t.done).length})`},{v:'today',l:`Heute (${todos.filter(t=>!t.done&&t.dueDate===today).length})`},{v:'done',l:`Erledigt (${todos.filter(t=>t.done).length})`}].map(({v,l})=>(
+                <button key={v} onClick={()=>setTodoFilter(v)} className="press"
+                  style={{flex:1,padding:'9px 4px',borderRadius:13,fontSize:11,fontWeight:600,textAlign:'center',background:todoFilter===v?'var(--surface)':'transparent',color:todoFilter===v?'var(--gold)':'var(--ink3)',border:`1px solid ${todoFilter===v?'var(--gold)':'var(--border)'}`}}>{l}</button>
+              ))}
+            </div>
+
+            {/* Priority groups */}
+            {todoFilter!=='done'&&[1,2,3,4].map(p=>{
+              const group=filteredTodos.filter(t=>t.priority===p);
+              if(group.length===0)return null;
+              return(
+                <div key={p} style={{marginBottom:16}}>
+                  <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
+                    <div style={{width:8,height:8,borderRadius:'50%',background:PRIO_COLORS[p-1]}}/>
+                    <p style={{fontSize:9,fontWeight:700,letterSpacing:'0.15em',textTransform:'uppercase',color:PRIO_COLORS[p-1]}}>{PRIO_LABELS[p-1]}</p>
+                    <span style={{flex:1,height:1,background:PRIO_COLORS[p-1],opacity:.15}}/>
+                    <span style={{fontSize:9,color:'var(--ink4)',fontWeight:600}}>{group.length}</span>
+                  </div>
+                  {group.map(t=><TodoItem key={t.id} todo={t} onToggle={toggleTodo} onDelete={deleteTodo} onSetDay={setTodoDay} editMode={editMode}/>)}
+                </div>
+              );
+            })}
+
+            {todoFilter==='done'&&filteredTodos.map(t=>(
+              <TodoItem key={t.id} todo={t} onToggle={toggleTodo} onDelete={deleteTodo} onSetDay={setTodoDay} editMode={false}/>
+            ))}
+
+            {filteredTodos.length===0&&(
+              <div style={{textAlign:'center',padding:'48px 20px'}}>
+                <p style={{fontSize:40,marginBottom:12}}>✦</p>
+                <p className="serif" style={{fontSize:18,color:'var(--ink3)',fontStyle:'italic'}}>
+                  {todoFilter==='done'?'Noch nichts erledigt.':todoFilter==='today'?'Nichts für heute geplant.':'Alle Aufgaben erledigt.'}
+                </p>
+              </div>
+            )}
+
+            {/* Edit toggle */}
+            {filteredTodos.length>0&&(
+              <button onClick={()=>setEditMode(s=>!s)} className="press"
+                style={{width:'100%',marginTop:8,padding:'10px',borderRadius:14,fontSize:11,fontWeight:600,color:editMode?'var(--red)':'var(--ink4)',background:'var(--surface2)',border:`1px solid ${editMode?'rgba(192,57,43,0.3)':'var(--border)'}`}}>
+                {editMode?'Bearbeitungsmodus beenden':'Aufgaben bearbeiten'}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* ══ PROGRESS ══════════════════════════════════ */}
+        {tab==='progress'&&<ProgressView habits={habits} log={log} todos={todos}/>}
+
+        {/* ══ SETTINGS ══════════════════════════════════ */}
+        {tab==='settings'&&<SettingsView habits={habits} log={log} todos={todos}
+          onPush={ghPush} onPull={ghPull} onTest={ghTest}
+          ghStatus={ghStatus} ghMsg={ghMsg}/>}
+
+      </main>
+
+      {/* TAB BAR */}
+      <nav className="nav-blur" style={{position:'fixed',bottom:0,left:0,right:0,maxWidth:430,margin:'0 auto',zIndex:50,borderTop:'1px solid var(--border)',paddingTop:10,paddingBottom:`calc(var(--sab)+10px)`,paddingLeft:20,paddingRight:20}}>
+        <div style={{display:'flex',justifyContent:'space-around',alignItems:'center'}}>
+          {/* Today */}
+          <button onClick={()=>setTab('today')} className="press" style={{display:'flex',flexDirection:'column',alignItems:'center',gap:3,minWidth:56}}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={tab==='today'?'var(--gold)':'var(--ink4)'} strokeWidth={tab==='today'?2.5:1.8} strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="3"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            <p style={{fontSize:8,fontWeight:700,letterSpacing:'0.1em',textTransform:'uppercase',color:tab==='today'?'var(--gold)':'var(--ink4)'}}>Heute</p>
+          </button>
+
+          {/* Center CTA */}
+          <button onClick={()=>tab==='today'?setShowAddHabit(true):setShowAddTodo(true)} className="press"
+            style={{width:56,height:56,borderRadius:18,background:'var(--gold)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 6px 18px rgba(100,70,20,0.28)',border:'3px solid var(--bg)',marginTop:-20}}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--bg)" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </button>
+
+          {/* Todos */}
+          <button onClick={()=>setTab('todos')} className="press" style={{display:'flex',flexDirection:'column',alignItems:'center',gap:3,minWidth:56,position:'relative'}}>
+            {todos.filter(t=>!t.done&&t.dueDate===today).length>0&&(
+              <div style={{position:'absolute',top:-2,right:8,width:16,height:16,borderRadius:'50%',background:'var(--red)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <span style={{fontSize:8,fontWeight:700,color:'white'}}>{todos.filter(t=>!t.done&&t.dueDate===today).length}</span>
+              </div>
+            )}
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={tab==='todos'?'var(--gold)':'var(--ink4)'} strokeWidth={tab==='todos'?2.5:1.8} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+            </svg>
+            <p style={{fontSize:8,fontWeight:700,letterSpacing:'0.1em',textTransform:'uppercase',color:tab==='todos'?'var(--gold)':'var(--ink4)'}}>Aufgaben</p>
+          </button>
+        </div>
+
+        {/* Secondary row: Progress + Settings */}
+        <div style={{display:'flex',justifyContent:'center',gap:6,marginTop:6}}>
+          <button onClick={()=>setTab('progress')} className="press" style={{display:'flex',alignItems:'center',gap:6,padding:'5px 16px',borderRadius:20,background:tab==='progress'?'var(--gold-dim)':'transparent',border:`1px solid ${tab==='progress'?'var(--border2)':'transparent'}`}}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={tab==='progress'?'var(--gold)':'var(--ink4)'} strokeWidth="2" strokeLinecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <p style={{fontSize:9,fontWeight:700,letterSpacing:'0.12em',textTransform:'uppercase',color:tab==='progress'?'var(--gold)':'var(--ink4)'}}>Auswertung</p>
+          </button>
+          <button onClick={()=>setTab('settings')} className="press" style={{display:'flex',alignItems:'center',gap:6,padding:'5px 14px',borderRadius:20,background:tab==='settings'?'var(--gold-dim)':'transparent',border:`1px solid ${tab==='settings'?'var(--border2)':'transparent'}`}}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={tab==='settings'?'var(--gold)':'var(--ink4)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+            </svg>
+            <p style={{fontSize:9,fontWeight:700,letterSpacing:'0.12em',textTransform:'uppercase',color:tab==='settings'?'var(--gold)':'var(--ink4)'}}>Einstellungen</p>
+          </button>
+        </div>
+      </nav>
+    </div>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
